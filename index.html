@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>POI Scanner</title>
+</head>
+<body>
+  <h1>POI Scanner Engine</h1>
+
+  <input id="symbol" placeholder="EUR/USD" value="EUR/USD" />
+  <button onclick="runScanner()">Run Scan</button>
+
+  <pre id="output">Waiting...</pre>
+
+  <script src="scanner.js"></script>
+
+  <script>
+    async function fetchCandles(symbol) {
+      const API_KEY = "YOUR_TWELVE_DATA_API_KEY";
+
+      const url =
+        `https://api.twelvedata.com/time_series?symbol=${symbol}&interval=1h&outputsize=50&apikey=${API_KEY}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+
+      if (!data.values) {
+        throw new Error("API error: " + JSON.stringify(data));
+      }
+
+      // Convert to your engine format
+      return data.values.map(c => ({
+        open: parseFloat(c.open),
+        high: parseFloat(c.high),
+        low: parseFloat(c.low),
+        close: parseFloat(c.close)
+      })).reverse();
+    }
+
+    async function runScanner() {
+      const symbol = document.getElementById("symbol").value;
+
+      document.getElementById("output").textContent = "Scanning...";
+
+      try {
+        const candles = await fetchCandles(symbol);
+
+        let engine = new POIEngine(candles);
+        let result = engine.run();
+
+        document.getElementById("output").textContent =
+          JSON.stringify(result, null, 2);
+
+      } catch (err) {
+        document.getElementById("output").textContent =
+          "Error: " + err.message;
+      }
+    }
+  </script>
+</body>
+</html>
